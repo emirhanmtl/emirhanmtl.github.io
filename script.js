@@ -109,9 +109,12 @@ prevButton.addEventListener("click", () => {
 });
 
 function showResult() {
+  score = 0; // Skoru sıfırla
+  const scorePerQuestion = 100 / quizData.length;
+
   quizData.forEach((questionData, index) => {
     if (userAnswers[index] === questionData.correctAnswer) {
-      score += 10;
+      score += scorePerQuestion;
     }
   });
 

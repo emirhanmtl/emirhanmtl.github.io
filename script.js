@@ -6,20 +6,24 @@ const result = document.getElementById("result");
 const scoreElement = document.getElementById("score");
 const correctIncorrect = document.getElementById("correct-incorrect");
 const restartButton = document.getElementById("restart");
+const addQuestionButton = document.getElementById("add-question");
+const editQuestionButton = document.getElementById("edit-question");
+const timerElement = document.getElementById("timer");
 
 let currentQuestionIndex = 0;
 let score = 0;
+let started = false;
+let timeLeft = 300;
 let userAnswers = [];
-
-const quizData = JSON.parse(localStorage.getItem("quizData")) || [
+let quizData = [
   {
     question: "1) Karadeniz Teknik Üniversitesi hangi ildedir?",
     options: ["Ankara", "İstanbul", "Trabzon"],
     correctAnswer: 2,
   },
   {
-    question: "2) Web Programlama dersini kim vermektedir?",
-    options: ["Öğr. Gör. Dr. Zafer Yavuz", "Doç. Dr. Hüseyin Pehlivan", "Doç. Dr. Bekir Dizdaroğlu"],
+    question: "2) Cumhuriyet hangi yılda ilan edilmiştir?",
+    options: ["1923", "1071", "1453"],
     correctAnswer: 0,
   },
   {
@@ -63,8 +67,29 @@ const quizData = JSON.parse(localStorage.getItem("quizData")) || [
     correctAnswer: 1,
   },
 ];
+function startTimer() {
+  timerInterval = setInterval(() => {
+    timeLeft--;
+
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timerElement.textContent = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      timerElement.textContent = "00:00";
+      showResult();
+    }
+  }, 1000);
+}
+
+let scorePerQuestion = 100 / quizData.length;
 
 function renderQuestion() {
+  if(currentQuestionIndex >= quizData.length || currentQuestionIndex < 0) {
+    console.error("Invalid question index");
+    return;
+  };
   const questionData = quizData[currentQuestionIndex];
   questionElement.textContent = questionData.question;
   optionsContainer.innerHTML = "";
@@ -109,9 +134,6 @@ prevButton.addEventListener("click", () => {
 });
 
 function showResult() {
-  score = 0; // Skoru sıfırla
-  const scorePerQuestion = 100 / quizData.length;
-
   quizData.forEach((questionData, index) => {
     if (userAnswers[index] === questionData.correctAnswer) {
       score += scorePerQuestion;
@@ -120,7 +142,7 @@ function showResult() {
 
   document.getElementById("quiz-container").style.display = "none";
   result.style.display = "block";
-  scoreElement.textContent = score;
+  scoreElement.textContent = Math.round(score);
 
   correctIncorrect.innerHTML = quizData
     .map(
@@ -130,6 +152,8 @@ function showResult() {
         }</div>`
     )
     .join("");
+
+  score = 0; // Puanı sıfırla
 }
 
 restartButton.addEventListener("click", () => {
@@ -140,30 +164,50 @@ restartButton.addEventListener("click", () => {
   userAnswers = [];
   renderQuestion();
 });
-const timerElement = document.getElementById("timer");
-let timerInterval;
-let timeLeft = 300; // 5 dakika x 60 saniye = 300 saniye
-let started = false;
 
-function startTimer() {
-  timerInterval = setInterval(() => {
-    timeLeft--;
+addQuestionButton.addEventListener('click', () => {
+  const newQuestion = prompt('Yeni soruyu giriniz:');
+  const newOption1 = prompt('1. seçeneği giriniz:');
+  const newOption2 = prompt('2. seçeneği giriniz:');
+  const newOption3 = prompt('3. seçeneği giriniz:');
+  const correctAnswer = parseInt(prompt('Doğru seçeneğin numarasını giriniz (1, 2 veya 3):')) - 1;
 
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    timerElement.textContent = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      timerElement.textContent = "00:00";
-      showResult();
-    }
-  }, 1000);
+  const newQuestionObject = {
+    question: newQuestion,
+    options: [newOption1, newOption2, newOption3],
+    correctAnswer: correctAnswer
 }
 
-function stopTimer() {
-  clearInterval(timerInterval);
+quizData.push(newQuestionObject);
+
+scorePerQuestion = 100 / quizData.length;
+
+renderQuestion();
+});
+
+editQuestionButton.addEventListener('click', () => {
+if(currentQuestionIndex >= quizData.length || currentQuestionIndex < 0) {
+    console.error("Invalid question index");
+    return;
+  }
+const editedQuestion = prompt('Soruyu düzenleyiniz:', quizData[currentQuestionIndex].question);
+const editedOption1 = prompt('1. seçeneği düzenleyiniz:', quizData[currentQuestionIndex].options[0]);
+const editedOption2 = prompt('2. seçeneği düzenleyiniz:', quizData[currentQuestionIndex].options[1]);
+const editedOption3 = prompt('3. seçeneği düzenleyiniz:', quizData[currentQuestionIndex].options[2]);
+const correctAnswer = parseInt(prompt('Doğru seçeneğin numarasını giriniz (1, 2 veya 3):')) - 1;
+
+quizData[currentQuestionIndex] = {
+    question: editedQuestion,
+    options: [editedOption1, editedOption2, editedOption3],
+    correctAnswer: correctAnswer
 }
+
+scorePerQuestion = 100 / quizData.length;
+
+renderQuestion();
+});
+
+renderQuestion();
 
 optionsContainer.addEventListener("change", () => {
   if (!started) {
@@ -171,23 +215,3 @@ optionsContainer.addEventListener("change", () => {
     startTimer();
   }
 });
-
-nextButton.addEventListener("click", () => {
-  // ...
-  if (currentQuestionIndex >= quizData.length) {
-    stopTimer();
-    showResult();
-  } else {
-    renderQuestion();
-  }
-});
-
-restartButton.addEventListener("click", () => {
-  // ...
-  timeLeft = 300;
-  timerElement.textContent = "05:00";
-  started = false;
-});
-
-
-renderQuestion();
